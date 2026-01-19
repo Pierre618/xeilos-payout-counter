@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Payouts Communauté Xeilos</title>
+  <style>
+    body { margin:0; background:transparent; font-family: Arial, sans-serif; color:#fff; }
+    .wrap { width:800px; padding:10px 12px; box-sizing:border-box; }
+    .title { font-weight:700; font-size:18px; margin-bottom:8px; display:flex; gap:8px; align-items:center; }
+    .bar { height:18px; background: rgba(255,255,255,.15); border-radius:999px; overflow:hidden; }
+    .fill { height:100%; width:0%; background: linear-gradient(90deg,#7c3aed,#22c55e); transition: width .6s ease; }
+    .sub { margin-top:6px; font-size:13px; opacity:.9; display:flex; justify-content:space-between; }
+    .err { font-size:13px; opacity:.9; color:#ffb4b4; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="title">💰 Payouts Communauté Xeilos</div>
+    <div class="bar"><div class="fill" id="fill"></div></div>
+    <div class="sub">
+      <div id="left">Chargement…</div>
+      <div id="right"></div>
+    </div>
+    <div class="err" id="err" style="display:none;">Erreur de connexion API</div>
+  </div>
+
+  <script>
+    const API = "/payouts";
+
+    const fill = document.getElementById("fill");
+    const left = document.getElementById("left");
+    const right = document.getElementById("right");
+    const err = document.getElementById("err");
+
+    async function refresh() {
+      try {
+        err.style.display = "none";
+        const r = await fetch(API, { cache: "no-store" });
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        const d = await r.json();
+
+        const total = Number(d.total || 0);
+        const step = Number(d.step || 10000);
+        const pct = Math.max(0, Math.min(100, (total / step) * 100));
+
+        fill.style.width = pct.toFixed(1) + "%";
+        left.textContent = `${total.toLocaleString("fr-FR")} / ${step.toLocaleString("fr-FR")} €`;
+        right.textContent = pct.toFixed(1) + "%";
+      } catch {
+        err.style.display = "block";
+      }
+    }
+
+    refresh();
+    setInterval(refresh, 5000);
+  </script>
+</body>
+</html>
