@@ -5,53 +5,266 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Payouts Communauté Xeilos</title>
   <style>
-    body { margin:0; background:transparent; font-family: Arial, sans-serif; color:#fff; }
-    .wrap { width:800px; padding:10px 12px; box-sizing:border-box; }
-    .title { font-weight:700; font-size:18px; margin-bottom:8px; display:flex; gap:8px; align-items:center; }
-    .bar { height:18px; background: rgba(255,255,255,.15); border-radius:999px; overflow:hidden; }
-    .fill { height:100%; width:0%; background: linear-gradient(90deg,#7c3aed,#22c55e); transition: width .6s ease; }
-    .sub { margin-top:6px; font-size:13px; opacity:.9; display:flex; justify-content:space-between; }
-    .err { font-size:13px; opacity:.9; color:#ffb4b4; }
+    :root{
+      --bg: rgba(0,0,0,0);
+      --card: rgba(18,18,18,.78);
+      --card2: rgba(18,18,18,.92);
+      --text: #ffffff;
+      --muted: rgba(255,255,255,.72);
+      --track: rgba(255,255,255,.14);
+      --fill: rgba(255,255,255,.92);
+      --accent: #ffd36a;
+      --radius: 14px;
+      --w: 800px;
+    }
+    html,body{
+      margin:0; padding:0; background:var(--bg);
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      color:var(--text);
+    }
+    .wrap{
+      width: var(--w);
+      padding: 0;
+    }
+    .card{
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.10);
+      backdrop-filter: blur(8px);
+    }
+    .header{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding: 10px 14px 8px 14px;
+      background: rgba(0,0,0,.20);
+      border-bottom: 1px solid rgba(255,255,255,.10);
+      font-weight: 700;
+      letter-spacing: .2px;
+      font-size: 18px;
+      line-height: 1.2;
+    }
+    .coin{
+      width:18px; height:18px;
+      display:inline-grid;
+      place-items:center;
+      border-radius: 999px;
+      color: #111;
+      background: var(--accent);
+      font-size: 12px;
+      box-shadow: 0 8px 18px rgba(0,0,0,.25);
+    }
+
+    .body{
+      padding: 10px 14px 12px 14px;
+      background: var(--card2);
+    }
+
+    .topline{
+      display:flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .amount{
+      font-size: 18px;
+      font-weight: 800;
+      display:flex;
+      gap: 6px;
+      align-items: baseline;
+    }
+    .amount .dollar{
+      color: var(--accent);
+      font-weight: 900;
+      display:inline-block;
+    }
+
+    /* (2) animation $ */
+    .pulseDollar{
+      animation: dollarPulse 1.4s ease-in-out infinite;
+      transform-origin: center;
+    }
+    @keyframes dollarPulse{
+      0%,100%{ transform: scale(1); filter: drop-shadow(0 0 0 rgba(255,211,106,0)); }
+      50%{ transform: scale(1.08); filter: drop-shadow(0 0 10px rgba(255,211,106,.35)); }
+    }
+
+    /* (2) animation milestone */
+    .milestoneHit .card{
+      animation: milestonePulse 1.2s ease-in-out 2;
+      border-color: rgba(255,211,106,.55);
+    }
+    @keyframes milestonePulse{
+      0%{ transform: scale(1); box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+      50%{ transform: scale(1.02); box-shadow: 0 18px 55px rgba(255,211,106,.18); }
+      100%{ transform: scale(1); box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+    }
+
+    .meta{
+      font-size: 12px;
+      color: var(--muted);
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .bar{
+      height: 10px;
+      background: var(--track);
+      border-radius: 999px;
+      overflow:hidden;
+      position: relative;
+    }
+    .fill{
+      height: 100%;
+      width: 0%;
+      background: var(--fill);
+      border-radius: 999px;
+      transition: width .6s ease;
+    }
+
+    .bottomline{
+      margin-top: 8px;
+      display:flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+    }
+    .last{
+      font-size: 12px;
+      color: var(--muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 70%;
+    }
+    .status{
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .error{
+      color: rgba(255,255,255,.85);
+      font-size: 12px;
+      padding: 10px 14px;
+      background: rgba(255,80,80,.12);
+      border-top: 1px solid rgba(255,80,80,.25);
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="title">💰 Payouts Communauté Xeilos</div>
-    <div class="bar"><div class="fill" id="fill"></div></div>
-    <div class="sub">
-      <div id="left">Chargement…</div>
-      <div id="right"></div>
+  <div id="root" class="wrap">
+    <div class="card">
+      <div class="header">
+        <span class="coin">$</span>
+        <span>Payouts Communauté Xeilos</span>
+      </div>
+
+      <div class="body">
+        <div class="topline">
+          <div class="amount">
+            <span id="dollar" class="dollar pulseDollar">$</span>
+            <span id="current">$0</span>
+            <span style="opacity:.55;font-weight:700;">/</span>
+            <span id="target">$0</span>
+          </div>
+          <div id="meta" class="meta">—</div>
+        </div>
+
+        <div class="bar">
+          <div id="fill" class="fill"></div>
+        </div>
+
+        <div class="bottomline">
+          <div id="last" class="last">Dernier payout : —</div>
+          <div id="status" class="status">Connexion…</div>
+        </div>
+      </div>
+
+      <div id="error" class="error" style="display:none;">Erreur de connexion API</div>
     </div>
-    <div class="err" id="err" style="display:none;">Erreur de connexion API</div>
   </div>
 
   <script>
-    const API = "/payouts";
+    // IMPORTANT: on appelle ton API Railway
+    // Comme ton widget est servi par le même serveur Railway, on peut appeler "/payouts" en relatif.
+    const API_URL = "/payouts";
 
-    const fill = document.getElementById("fill");
-    const left = document.getElementById("left");
-    const right = document.getElementById("right");
-    const err = document.getElementById("err");
+    const elCurrent = document.getElementById("current");
+    const elTarget  = document.getElementById("target");
+    const elFill    = document.getElementById("fill");
+    const elLast    = document.getElementById("last");
+    const elStatus  = document.getElementById("status");
+    const elMeta    = document.getElementById("meta");
+    const elErr     = document.getElementById("error");
+    const root      = document.getElementById("root");
 
-    async function refresh() {
-      try {
-        err.style.display = "none";
-        const r = await fetch(API, { cache: "no-store" });
-        if (!r.ok) throw new Error("HTTP " + r.status);
-        const d = await r.json();
+    function fmtUSD(n){
+      // affichage $ propre (sans décimales)
+      return "$" + Number(n || 0).toLocaleString("en-US");
+    }
 
-        const total = Number(d.total || 0);
-        const step = Number(d.step || 10000);
-        const pct = Math.max(0, Math.min(100, (total / step) * 100));
+    function timeAgo(ts){
+      if(!ts) return "—";
+      const diff = Date.now() - ts;
+      const s = Math.floor(diff/1000);
+      if(s < 10) return "à l’instant";
+      if(s < 60) return `il y a ${s}s`;
+      const m = Math.floor(s/60);
+      if(m < 60) return `il y a ${m} min`;
+      const h = Math.floor(m/60);
+      if(h < 24) return `il y a ${h}h`;
+      const d = Math.floor(h/24);
+      return `il y a ${d}j`;
+    }
 
-        fill.style.width = pct.toFixed(1) + "%";
-        left.textContent = `${total.toLocaleString("fr-FR")} / ${step.toLocaleString("fr-FR")} €`;
-        right.textContent = pct.toFixed(1) + "%";
-      } catch {
-        err.style.display = "block";
+    async function refresh(){
+      try{
+        elStatus.textContent = "Mise à jour…";
+        const res = await fetch(API_URL, { cache: "no-store" });
+        if(!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+
+        // data: { total, step, lastPayout, lastStudent, lastAt, milestone, milestoneJustHit }
+        const total = Number(data.total || 0);
+        const step  = Number(data.step || 100000);
+
+        const inStep = total % step;
+        const pct = Math.max(0, Math.min(100, (inStep / step) * 100));
+
+        elCurrent.textContent = fmtUSD(inStep);
+        elTarget.textContent  = fmtUSD(step);
+        elFill.style.width = pct.toFixed(2) + "%";
+
+        // (3) dernier payout validé
+        const lp = Number(data.lastPayout || 0);
+        const ls = (data.lastStudent || "").trim();
+        if(lp > 0){
+          elLast.textContent = `Dernier payout : ${fmtUSD(lp)}${ls ? " • " + ls : ""}`;
+        } else {
+          elLast.textContent = "Dernier payout : —";
+        }
+
+        elMeta.textContent = `Maj ${timeAgo(Number(data.lastAt || 0))}`;
+        elStatus.textContent = "En ligne ✅";
+
+        // (2) milestone animation (une fois)
+        if(data.milestoneJustHit){
+          root.classList.add("milestoneHit");
+          setTimeout(() => root.classList.remove("milestoneHit"), 2500);
+        }
+
+        elErr.style.display = "none";
+      }catch(e){
+        elStatus.textContent = "Hors ligne ❌";
+        elErr.style.display = "block";
       }
     }
 
+    // refresh rapide au lancement + toutes les 5s
     refresh();
     setInterval(refresh, 5000);
   </script>
