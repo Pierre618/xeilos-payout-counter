@@ -1,4 +1,6 @@
 import express from "express";
+import path from "path";
+import { fileURLToPath } from "url";
 import { Client, GatewayIntentBits, Partials } from "discord.js";
 import { Low } from "lowdb";
 import { JSONFile } from "lowdb/node";
@@ -8,6 +10,10 @@ const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 const PAYOUT_CHANNEL_ID = process.env.PAYOUT_CHANNEL_ID;
 const VALIDATOR_ROLE_ID = process.env.VALIDATOR_ROLE_ID;
 const STEP = Number(process.env.STEP || 100000);
+
+/* ================= PATH FIX (ESM) ================= */
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /* ================= DATABASE ================= */
 const adapter = new JSONFile("data.json");
@@ -21,7 +27,19 @@ const db = new Low(adapter, {
   lastMilestoneAnnounced: 0,
   milestoneJustHit: false
 });
+
 await db.read();
+db.data ||= {
+  total: 0,
+  step: STEP,
+  lastPayout: 0,
+  lastStudent: "",
+  lastAt: 0,
+  countedMessageIds: [],
+  lastMilestoneAnnounced: 0,
+  milestoneJustHit: false
+};
+await db.write();
 
 /* ================= DISCORD BOT ================= */
 const client = new Client({
@@ -86,9 +104,18 @@ client.on("messageReactionAdd", async (reaction, user) => {
   }
 });
 
-/* ================= API JSON ================= */
+/* ================= EXPRESS API ================= */
 const app = express();
 
+/* 🔥 IMPORTANT : servir le dossier public */
+app.use(express.static(path.join(__dirname, "public")));
+
+/* Page principale = widget */
+app.get("/", (_, res) => {
+  res.sendFile(path.join(__dirname, "public", "widget.html"));
+});
+
+/* API JSON */
 app.get("/payouts", async (_, res) => {
   await db.read();
 
@@ -102,16 +129,18 @@ app.get("/payouts", async (_, res) => {
     milestoneJustHit: db.data.milestoneJustHit
   };
 
-  // one-shot milestone
+  // reset one-shot
   db.data.milestoneJustHit = false;
   await db.write();
 
   res.json(payload);
 });
 
+/* ================= START SERVER ================= */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log("🌍 API active sur le port", PORT);
+  console.log(`🌍 API active sur le port ${PORT}`);
 });
 
+/* ================= LOGIN BOT ================= */
 client.login(DISCORD_TOKEN);
