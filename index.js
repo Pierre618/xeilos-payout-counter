@@ -11,6 +11,9 @@ const PAYOUT_CHANNEL_ID = process.env.PAYOUT_CHANNEL_ID;
 const VALIDATOR_ROLE_ID = process.env.VALIDATOR_ROLE_ID;
 const STEP = Number(process.env.STEP || 100000);
 
+// ✅ Clé secrète pour reset via URL
+const RESET_KEY = process.env.RESET_KEY;
+
 /* ================= PATH HELPERS ================= */
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,6 +30,7 @@ const db = new Low(adapter, {
   lastMilestoneAnnounced: 0,
   milestoneJustHit: false,
 });
+
 await db.read();
 db.data ||= {
   total: 0,
@@ -55,7 +59,11 @@ function parsePayoutAmount(text) {
   if (!text) return null;
   if (!text.toUpperCase().includes("PAYOUT")) return null;
 
-  // Ex: "PAYOUT $500" / "PAYOUT 500$" / "PAYOUT 1 200$"
+  // Exemples acceptés :
+  // "PAYOUT $500"
+  // "PAYOUT 500$"
+  // "PAYOUT 1 200$"
+  // "PAYOUT $1,200"
   const match = text.match(/(\$?\s*\d[\d\s,]*\s*\$?)/);
   if (!match) return null;
 
@@ -77,7 +85,7 @@ client.on("messageReactionAdd", async (reaction, user) => {
     const message = reaction.message;
     if (!message.guild) return;
 
-    // 1) Bon channel
+    // 1) Bon salon
     if (message.channelId !== PAYOUT_CHANNEL_ID) return;
 
     // 2) Bonne emoji
@@ -103,11 +111,11 @@ client.on("messageReactionAdd", async (reaction, user) => {
     db.data.lastAt = Date.now();
     db.data.countedMessageIds.push(message.id);
 
-    // Milestone / step
+    // Milestone / step (100k, 200k, 300k...)
     const currentMilestone = Math.floor(db.data.total / STEP) * STEP;
     if (currentMilestone > db.data.lastMilestoneAnnounced) {
       db.data.lastMilestoneAnnounced = currentMilestone;
-      db.data.milestoneJustHit = true; // one-shot pour l’overlay
+      db.data.milestoneJustHit = true; // one-shot côté widget
     }
 
     await db.write();
@@ -123,17 +131,15 @@ client.on("messageReactionAdd", async (reaction, user) => {
 /* ================= EXPRESS API ================= */
 const app = express();
 
-/* ================= ÉTAPE 2 — LE BLOC À AJOUTER (AVANT app.listen) ================= */
-/* ✅ Sert le dossier /public (widget.html + cash.mp3 etc.) */
+// ✅ Sert /public (widget.html, cash.mp3, etc.)
 app.use(express.static(path.join(__dirname, "public")));
 
-/* ✅ Route racine → affiche widget.html */
+// ✅ Route racine → widget
 app.get("/", (_req, res) => {
   res.sendFile(path.join(__dirname, "public", "widget.html"));
 });
-/* ================= FIN ÉTAPE 2 ================= */
 
-/* ✅ Endpoint JSON pour l’overlay */
+// ✅ Endpoint JSON utilisé par le widget
 app.get("/payouts", async (_req, res) => {
   await db.read();
 
@@ -152,6 +158,40 @@ app.get("/payouts", async (_req, res) => {
   await db.write();
 
   res.json(payload);
+});
+
+/* ================= RESET SECRET (URL) =================
+  Utilisation :
+  https://TON-DOMAINE/reset?key=TA_CLE
+
+  ⚠️ Mets RESET_KEY dans Railway → Variables
+======================================================= */
+app.get("/reset", async (req, res) => {
+  const key = req.query.key;
+
+  if (!RESET_KEY) {
+    return res.status(500).json({ error: "RESET_KEY not set on server" });
+  }
+
+  if (!key || key !== RESET_KEY) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+
+  await db.read();
+
+  db.data.total = 0;
+  db.data.lastPayout = 0;
+  db.data.lastStudent = "";
+  db.data.lastAt = 0;
+  db.data.countedMessageIds = [];
+  db.data.lastMilestoneAnnounced = 0;
+  db.data.milestoneJustHit = false;
+
+  await db.write();
+
+  console.log("♻️ Counter reset via /reset");
+
+  return res.json({ success: true, message: "Counter reset to 0" });
 });
 
 /* ================= START SERVER ================= */
