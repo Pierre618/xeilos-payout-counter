@@ -5,43 +5,41 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Payouts Communauté Xeilos</title>
   <style>
-    /* =========================================================
-      🎨 COULEURS FACILES A MODIFIER ICI
-      (on ne touche pas à la police comme demandé)
-    ========================================================= */
     :root{
-      --card-bg: rgba(0,0,0,.55);
-      --card-border: rgba(255,255,255,.10);
-
+      --bg: rgba(0,0,0,0);
+      --card: rgba(20,20,20,0.85);
       --text: #ffffff;
-      --muted: rgba(255,255,255,.75);
-
-      --bar-bg: rgba(255,255,255,.14);
-      --bar-fill: #C62828;
-
-      --shadow: 0 10px 35px rgba(0,0,0,.35);
+      --muted: rgba(255,255,255,0.75);
+      --track: rgba(255,255,255,0.18);
+      --bar-fill: #C62828; /* 🔴 ton rouge */
+      --shadow: rgba(0,0,0,0.35);
+      --radius: 14px;
     }
 
-    /* Fond transparent pour Streamlabs */
-    html, body {
-      background: rgba(0,0,0,0);
+    html, body{
+      width: 100%;
+      height: 100%;
       margin: 0;
-      padding: 0;
+      background: var(--bg);
       overflow: hidden;
     }
 
-    .root {
-      width: 800px;            /* tu peux ajuster dans Streamlabs */
-      border-radius: 12px;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      box-shadow: var(--shadow);
-      color: var(--text);
-      padding: 12px 14px;
+    /* Container */
+    .root{
+      position: relative;
+      width: 800px;
+      height: 120px;
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: 0 10px 30px var(--shadow);
+      padding: 14px 16px;
       box-sizing: border-box;
+      color: var(--text);
+      overflow: hidden;
     }
 
-    .top {
+    /* Header */
+    .top{
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -49,59 +47,60 @@
       margin-bottom: 8px;
     }
 
-    .title {
+    .title{
       font-weight: 700;
       font-size: 18px;
-      line-height: 1.1;
       display: flex;
       align-items: center;
       gap: 8px;
-    }
-
-    /* ✅ ON CACHE "EN LIGNE" */
-    .status {
-      display: none !important;
-    }
-
-    .line1 {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 6px;
-    }
-
-    .leftAmount {
-      font-weight: 700;
-      font-size: 16px;
       white-space: nowrap;
     }
 
-    .rightTotal {
-      font-weight: 600;
+    /* ✅ On ne montre plus “En ligne” */
+    .status{
+      display: none !important;
+    }
+
+    /* Numbers line */
+    .numbers{
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      gap: 12px;
+    }
+
+    .leftNums{
+      font-weight: 700;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    .rightNums{
+      font-weight: 700;
       font-size: 13px;
       color: var(--muted);
       white-space: nowrap;
     }
 
-    .bar {
+    /* Progress bar */
+    .bar{
       width: 100%;
       height: 10px;
+      background: var(--track);
       border-radius: 999px;
-      background: var(--bar-bg);
       overflow: hidden;
-      position: relative;
     }
-
-    .fill {
-      height: 100%;
+    .fill{
       width: 0%;
+      height: 100%;
       background: var(--bar-fill);
       border-radius: 999px;
-      transition: width .35s ease;
+      transition: width 600ms ease;
     }
 
-    .bottom {
+    /* Footer */
+    .footer{
       display: flex;
       justify-content: space-between;
       gap: 10px;
@@ -112,49 +111,106 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    .footerLeft{
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .footerRight{
+      flex: 0 0 auto;
+    }
 
-    .err {
-      margin-top: 8px;
+    .err{
+      position: absolute;
+      left: 16px;
+      bottom: 10px;
       font-size: 12px;
       color: #ffb4b4;
       display: none;
+    }
+
+    /* =========================
+       💵 MONEY RAIN ANIMATION
+       ========================= */
+    .money-layer{
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .bill{
+      position: absolute;
+      top: -40px;
+      font-size: 22px;
+      opacity: 0.95;
+      filter: drop-shadow(0 6px 8px rgba(0,0,0,0.35));
+      animation: fall linear forwards;
+      will-change: transform, opacity;
+      user-select: none;
+    }
+
+    @keyframes fall{
+      0%   { transform: translate3d(0, -30px, 0) rotate(0deg); opacity: 0; }
+      10%  { opacity: 1; }
+      100% { transform: translate3d(var(--dx), 170px, 0) rotate(var(--rot)); opacity: 0; }
+    }
+
+    /* Petit flash “milestone” */
+    .flash{
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.14), rgba(255,255,255,0));
+      opacity: 0;
+      pointer-events: none;
+      animation: flash 900ms ease-out forwards;
+    }
+    @keyframes flash{
+      0% { opacity: 0; }
+      18% { opacity: 1; }
+      100% { opacity: 0; }
     }
   </style>
 </head>
 
 <body>
   <div class="root" id="root">
+    <div class="money-layer" id="money"></div>
+
     <div class="top">
       <div class="title">💰 Payouts Communauté Xeilos</div>
       <div class="status" id="status">En ligne ✅</div>
     </div>
 
-    <div class="line1">
-      <div class="leftAmount">
-        <span id="currentInStep">$0</span> / <span id="stepAmount">$100,000</span>
-      </div>
-      <div class="rightTotal">
-        Total cumul : <span id="totalAll">$0</span>
-      </div>
+    <div class="numbers">
+      <div class="leftNums"><span id="cur">$0</span> / <span id="target">$100,000</span></div>
+      <div class="rightNums" id="totalCumul">Total cumul : $0</div>
     </div>
 
-    <div class="bar">
-      <div class="fill" id="fill"></div>
-    </div>
+    <div class="bar"><div class="fill" id="fill"></div></div>
 
-    <div class="bottom">
-      <div id="lastText">Dernier payout : —</div>
-      <div id="ageText">—</div>
+    <div class="footer">
+      <div class="footerLeft" id="last">Dernier payout : —</div>
+      <div class="footerRight" id="meta">—</div>
     </div>
 
     <div class="err" id="err">Erreur de connexion API</div>
   </div>
 
   <script>
-    // ✅ L'API est servie par le même domaine Railway
-    const API_URL = `${window.location.origin}/payouts`;
+    // 🔧 L’API est servie par le même domaine Railway
+    const API_URL = "/payouts";
 
-    function money(n){
+    const elCur = document.getElementById("cur");
+    const elTarget = document.getElementById("target");
+    const elFill = document.getElementById("fill");
+    const elLast = document.getElementById("last");
+    const elMeta = document.getElementById("meta");
+    const elErr = document.getElementById("err");
+    const elTotalCumul = document.getElementById("totalCumul");
+    const moneyLayer = document.getElementById("money");
+    const root = document.getElementById("root");
+
+    function fmtUSD(n){
       const v = Number(n || 0);
       return v.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
     }
@@ -163,64 +219,91 @@
       const t = Number(ts || 0);
       if (!t) return "—";
       const diff = Date.now() - t;
-      if (diff < 10_000) return "à l'instant";
+      if (diff < 10000) return "à l’instant";
       const s = Math.floor(diff / 1000);
       if (s < 60) return `il y a ${s}s`;
       const m = Math.floor(s / 60);
       if (m < 60) return `il y a ${m} min`;
       const h = Math.floor(m / 60);
-      if (h < 24) return `il y a ${h} h`;
+      if (h < 24) return `il y a ${h}h`;
       const d = Math.floor(h / 24);
-      return `il y a ${d} j`;
+      return `il y a ${d}j`;
     }
 
-    const elFill = document.getElementById("fill");
-    const elCurrent = document.getElementById("currentInStep");
-    const elStep = document.getElementById("stepAmount");
-    const elTotal = document.getElementById("totalAll");
-    const elLast = document.getElementById("lastText");
-    const elAge = document.getElementById("ageText");
-    const elErr = document.getElementById("err");
-    const elStatus = document.getElementById("status");
+    // =========================
+    // 💵 Animation money rain
+    // =========================
+    function triggerMoneyRain(){
+      // flash
+      const flash = document.createElement("div");
+      flash.className = "flash";
+      root.appendChild(flash);
+      setTimeout(() => flash.remove(), 1000);
+
+      const symbols = ["💵","💲","$","💰","💵","💲"];
+      const count = 26;           // quantité de "billets"
+      const durationMin = 900;    // ms
+      const durationMax = 1700;   // ms
+
+      for (let i = 0; i < count; i++){
+        const s = document.createElement("div");
+        s.className = "bill";
+        s.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+
+        const left = Math.random() * 100; // %
+        const dx = (Math.random() * 220 - 110) + "px";
+        const rot = (Math.random() * 380 - 190) + "deg";
+        const dur = Math.floor(durationMin + Math.random() * (durationMax - durationMin));
+
+        s.style.left = left + "%";
+        s.style.setProperty("--dx", dx);
+        s.style.setProperty("--rot", rot);
+        s.style.animationDuration = dur + "ms";
+        s.style.fontSize = (18 + Math.random() * 16) + "px";
+
+        moneyLayer.appendChild(s);
+        setTimeout(() => s.remove(), dur + 200);
+      }
+    }
 
     async function refresh(){
       try{
         elErr.style.display = "none";
 
         const res = await fetch(API_URL, { cache: "no-store" });
-        if(!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) throw new Error("HTTP " + res.status);
         const data = await res.json();
-
-        // data: { total, step, lastPayout, lastStudent, lastAt, milestone, milestoneJustHit }
 
         const total = Number(data.total || 0);
         const step = Number(data.step || 100000);
 
-        // ✅ barre = progression dans le cycle courant
-        const inStep = total % step;
-
-        elCurrent.textContent = money(inStep);
-        elStep.textContent = money(step);
-        elTotal.textContent = money(total);
-
+        // Progress "cycle" (0->100k, puis reset visuel)
+        const inStep = total % step;                // 0..99999
         const pct = Math.max(0, Math.min(100, (inStep / step) * 100));
+
+        elCur.textContent = fmtUSD(inStep);
+        elTarget.textContent = fmtUSD(step);
         elFill.style.width = pct.toFixed(2) + "%";
 
+        elTotalCumul.textContent = "Total cumul : " + fmtUSD(total);
+
+        // Dernier payout
         const lp = Number(data.lastPayout || 0);
         const ls = (data.lastStudent || "").trim();
-        if(lp > 0){
-          elLast.textContent = `Dernier payout : ${money(lp)} • ${ls || "—"}`;
+        if (lp > 0){
+          elLast.textContent = `Dernier payout : ${fmtUSD(lp)} • ${ls || "—"}`;
         } else {
           elLast.textContent = "Dernier payout : —";
         }
 
-        elAge.textContent = timeAgo(data.lastAt);
+        elMeta.textContent = timeAgo(data.lastAt);
 
-        // (status caché mais on le met quand même à jour)
-        elStatus.textContent = "En ligne ✅";
+        // ✅ Animation au passage de palier (one-shot via API)
+        if (data.milestoneJustHit){
+          triggerMoneyRain();
+        }
 
-      } catch(e){
-        elStatus.textContent = "Hors ligne ❌";
+      } catch (e){
         elErr.style.display = "block";
       }
     }
