@@ -1,208 +1,288 @@
 <!doctype html>
 <html lang="fr">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Payouts Communauté Xeilos</title>
-    <style>
-      :root {
-        --bg: rgba(0,0,0,0.55);
-        --bg2: rgba(0,0,0,0.35);
-        --text: rgba(255,255,255,0.92);
-        --muted: rgba(255,255,255,0.70);
-        --ok: rgba(80, 200, 120, 1);
-        --err: rgba(255, 90, 90, 1);
-        --bar: rgba(255,255,255,0.22);
-        --fill: rgba(255,255,255,0.90);
-      }
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Payouts Communauté Xeilos</title>
+  <style>
+    :root{
+      --bg: rgba(0,0,0,0.65);
+      --panel: rgba(20,20,20,0.85);
+      --text: #ffffff;
+      --muted: rgba(255,255,255,0.75);
+      --muted2: rgba(255,255,255,0.55);
+      --barBg: rgba(255,255,255,0.12);
+      --barFill: rgba(255,255,255,0.92);
+      --ok: #4ade80;
+      --err: #fb7185;
+      --shadow: 0 10px 30px rgba(0,0,0,0.35);
+      --radius: 10px;
+      --pad: 12px;
+      --w: 800px;
+    }
 
-      body {
-        margin: 0;
-        background: rgba(0,0,0,0);
-        font-family: Arial, Helvetica, sans-serif;
-      }
+    html,body{
+      margin:0;
+      padding:0;
+      background: transparent;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--text);
+    }
 
-      .root {
-        width: 800px;
-        padding: 14px 16px;
-        border-radius: 10px;
-        background: var(--bg);
-        color: var(--text);
-        box-sizing: border-box;
-      }
+    .root{
+      width: var(--w);
+      box-sizing: border-box;
+      background: var(--bg);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
 
-      .title {
-        font-weight: 700;
-        font-size: 18px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 10px;
-        text-shadow: 0 1px 0 rgba(0,0,0,0.25);
-      }
+    .header{
+      padding: var(--pad);
+      background: var(--panel);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+    }
 
-      .row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-      }
+    .title{
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      white-space: nowrap;
+    }
 
-      .numbers {
-        font-size: 14px;
-        color: var(--muted);
-        white-space: nowrap;
-      }
+    .status{
+      font-size: 12px;
+      color: var(--muted);
+      display:flex;
+      align-items:center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+    .dot{
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--err);
+      box-shadow: 0 0 0 3px rgba(251,113,133,0.18);
+      flex: 0 0 auto;
+    }
+    .dot.ok{
+      background: var(--ok);
+      box-shadow: 0 0 0 3px rgba(74,222,128,0.18);
+    }
 
-      .status {
-        font-size: 12px;
-        color: var(--muted);
-        white-space: nowrap;
-      }
+    .content{
+      padding: var(--pad);
+      display:flex;
+      flex-direction:column;
+      gap: 8px;
+    }
 
-      .bar {
-        position: relative;
-        width: 100%;
-        height: 10px;
-        background: var(--bar);
-        border-radius: 999px;
-        overflow: hidden;
-        margin-top: 10px;
-      }
+    .line1{
+      display:flex;
+      align-items:baseline;
+      justify-content:space-between;
+      gap: 10px;
+      font-weight: 700;
+    }
+    .progressText{
+      font-size: 14px;
+      color: var(--text);
+      white-space: nowrap;
+    }
+    .totalText{
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
 
-      .fill {
-        height: 100%;
-        width: 0%;
-        background: var(--fill);
-        border-radius: 999px;
-        transition: width 0.4s ease;
-      }
+    .bar{
+      width: 100%;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--barBg);
+      overflow:hidden;
+      position: relative;
+    }
+    .fill{
+      height: 100%;
+      width: 0%;
+      background: var(--barFill);
+      border-radius: 999px;
+      transition: width 0.6s ease;
+    }
 
-      .meta {
-        margin-top: 10px;
-        font-size: 12px;
-        color: var(--muted);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-      }
+    .line2{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--muted2);
+    }
+    .last{
+      overflow:hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 70%;
+    }
+    .time{
+      white-space: nowrap;
+    }
 
-      .err {
-        margin-top: 8px;
-        font-size: 12px;
-        color: var(--err);
-        display: none;
-      }
+    .error{
+      display:none;
+      padding: 8px 12px;
+      background: rgba(251,113,133,0.12);
+      border: 1px solid rgba(251,113,133,0.25);
+      color: rgba(255,255,255,0.9);
+      border-radius: 10px;
+      font-size: 12px;
+    }
 
-      /* animation quand milestone hit */
-      .milestoneHit {
-        animation: pulse 2.5s ease-in-out 1;
-      }
-      @keyframes pulse {
-        0% { box-shadow: 0 0 0 rgba(255,255,255,0.0); }
-        30% { box-shadow: 0 0 25px rgba(255,255,255,0.25); }
-        100% { box-shadow: 0 0 0 rgba(255,255,255,0.0); }
-      }
-    </style>
-  </head>
+    /* Flash animation quand un milestone est atteint */
+    .milestoneHit .rootFlash{
+      animation: flash 2.2s ease;
+    }
+    @keyframes flash{
+      0%{ filter: brightness(1); }
+      12%{ filter: brightness(1.25); }
+      25%{ filter: brightness(1.05); }
+      40%{ filter: brightness(1.20); }
+      100%{ filter: brightness(1); }
+    }
 
-  <body>
-    <div id="root" class="root">
-      <div class="title">💰 Payouts Communauté Xeilos</div>
+    .rootFlash{
+      border-radius: var(--radius);
+    }
+  </style>
+</head>
 
-      <div class="row">
-        <div class="numbers">
-          <span id="current">$0</span> / <span id="target">$100,000</span>
+<body>
+  <div id="root" class="rootFlash">
+    <div class="root">
+      <div class="header">
+        <div class="title">💰 Payouts Communauté Xeilos</div>
+        <div class="status"><span id="dot" class="dot"></span><span id="statusText">Hors ligne</span></div>
+      </div>
+
+      <div class="content">
+        <div class="line1">
+          <div class="progressText"><span id="cycleCurrent">$0</span> / <span id="cycleTarget">$100,000</span></div>
+          <div id="totalGlobal" class="totalText">Total cumul : $0</div>
         </div>
-        <div id="status" class="status">Mise à jour…</div>
-      </div>
 
-      <div class="bar">
-        <div id="fill" class="fill"></div>
-      </div>
+        <div class="bar"><div id="fill" class="fill"></div></div>
 
-      <div class="meta">
-        <div id="last">Dernier payout : —</div>
-        <div id="when">—</div>
-      </div>
+        <div class="line2">
+          <div id="lastLine" class="last">Dernier payout : —</div>
+          <div id="timeAgo" class="time">—</div>
+        </div>
 
-      <div id="err" class="err">Erreur de connexion API</div>
+        <div id="errBox" class="error">Erreur de connexion API</div>
+      </div>
     </div>
+  </div>
 
-    <script>
-      // IMPORTANT: le widget appelle /payouts sur le même domaine Railway
-      const API_URL = "/payouts";
+  <script>
+    // ⚙️ IMPORTANT : ton API est servie sur le même domaine Railway
+    // Donc on peut utiliser un chemin relatif => pas de CORS, pas d’erreurs.
+    const API_URL = "/payouts";
 
-      const root = document.getElementById("root");
-      const elCurrent = document.getElementById("current");
-      const elTarget = document.getElementById("target");
-      const elFill = document.getElementById("fill");
-      const elStatus = document.getElementById("status");
-      const elLast = document.getElementById("last");
-      const elWhen = document.getElementById("when");
-      const elErr = document.getElementById("err");
+    const elDot = document.getElementById("dot");
+    const elStatus = document.getElementById("statusText");
+    const elCycleCurrent = document.getElementById("cycleCurrent");
+    const elCycleTarget = document.getElementById("cycleTarget");
+    const elFill = document.getElementById("fill");
+    const elLast = document.getElementById("lastLine");
+    const elTime = document.getElementById("timeAgo");
+    const elErr = document.getElementById("errBox");
+    const elTotalGlobal = document.getElementById("totalGlobal");
+    const root = document.getElementById("root");
 
-      function fmtUSD(n) {
-        return "$" + Number(n || 0).toLocaleString("en-US");
-      }
+    function fmtUSD(n){
+      const v = Number(n || 0);
+      return v.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+    }
 
-      function timeAgo(ts) {
-        if (!ts) return "—";
-        const diff = Date.now() - ts;
-        const s = Math.floor(diff / 1000);
-        if (s < 10) return "à l’instant";
-        if (s < 60) return `il y a ${s}s`;
-        const m = Math.floor(s / 60);
-        if (m < 60) return `il y a ${m} min`;
-        const h = Math.floor(m / 60);
-        if (h < 24) return `il y a ${h}h`;
-        const d = Math.floor(h / 24);
-        return `il y a ${d}j`;
-      }
+    function timeAgo(ts){
+      const t = Number(ts || 0);
+      if(!t) return "—";
+      const diff = Date.now() - t;
+      if(diff < 0) return "—";
+      const s = Math.floor(diff / 1000);
+      if(s < 10) return "à l’instant";
+      if(s < 60) return "il y a " + s + "s";
+      const m = Math.floor(s / 60);
+      if(m < 60) return "il y a " + m + " min";
+      const h = Math.floor(m / 60);
+      if(h < 24) return "il y a " + h + "h";
+      const d = Math.floor(h / 24);
+      return "il y a " + d + "j";
+    }
 
-      async function refresh() {
-        try {
-          elStatus.textContent = "Mise à jour…";
-          const res = await fetch(API_URL, { cache: "no-store" });
-          if (!res.ok) throw new Error("HTTP " + res.status);
-          const data = await res.json();
+    async function refresh(){
+      try{
+        const res = await fetch(API_URL, { cache: "no-store" });
+        if(!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
 
-          const total = Number(data.total || 0);
-          const step = Number(data.step || 100000);
-          const instep = total % step;
-          const pct = Math.max(0, Math.min(100, (instep / step) * 100));
+        // --- ONLINE UI
+        elDot.classList.add("ok");
+        elStatus.textContent = "En ligne ✅";
+        elErr.style.display = "none";
 
-          elCurrent.textContent = fmtUSD(instep);
-          elTarget.textContent = fmtUSD(step);
-          elFill.style.width = pct.toFixed(2) + "%";
+        const total = Number(data.total || 0);
+        const step = Number(data.step || 100000);
 
-          const lp = Number(data.lastPayout || 0);
-          const ls = (data.lastStudent || "").trim();
-          if (lp > 0) {
-            elLast.textContent = `Dernier payout : ${fmtUSD(lp)}${ls ? " • " + ls : ""}`;
-          } else {
-            elLast.textContent = "Dernier payout : —";
-          }
+        // ✅ Cycle logic : barre repart tous les 100k, total reste cumulatif
+        const cycleIndex = Math.floor(total / step);      // 0,1,2,3...
+        const cycleStart = cycleIndex * step;             // 0,100k,200k...
+        const cycleProgress = total - cycleStart;         // 0..step-1 (ou step)
+        const pct = Math.max(0, Math.min(100, (cycleProgress / step) * 100));
 
-          elWhen.textContent = data.lastAt ? timeAgo(Number(data.lastAt)) : "—";
+        elCycleCurrent.textContent = fmtUSD(cycleProgress);
+        elCycleTarget.textContent  = fmtUSD(step);
+        elFill.style.width = pct.toFixed(2) + "%";
 
-          elErr.style.display = "none";
-          elStatus.textContent = "En ligne ✅";
+        // Total cumulatif affiché à part
+        elTotalGlobal.textContent = "Total cumul : " + fmtUSD(total);
 
-          // milestone animation (one-shot)
-          if (data.milestoneJustHit) {
-            root.classList.add("milestoneHit");
-            setTimeout(() => root.classList.remove("milestoneHit"), 2500);
-          }
-        } catch (e) {
-          elStatus.textContent = "Hors ligne ❌";
-          elErr.style.display = "block";
+        // Dernier payout validé
+        const lp = Number(data.lastPayout || 0);
+        const ls = String(data.lastStudent || "").trim();
+
+        if(lp > 0 && ls){
+          elLast.textContent = "Dernier payout : " + fmtUSD(lp) + " • " + ls;
+        } else {
+          elLast.textContent = "Dernier payout : —";
         }
-      }
+        elTime.textContent = timeAgo(data.lastAt);
 
-      refresh();
-      setInterval(refresh, 5000);
-    </script>
-  </body>
+        // Animation milestone (100k,200k,300k...)
+        if(data.milestoneJustHit){
+          root.classList.add("milestoneHit");
+          setTimeout(() => root.classList.remove("milestoneHit"), 2500);
+        }
+
+      } catch(e){
+        // --- OFFLINE UI
+        elDot.classList.remove("ok");
+        elStatus.textContent = "Hors ligne ❌";
+        elErr.style.display = "block";
+      }
+    }
+
+    refresh();
+    setInterval(refresh, 5000);
+  </script>
+</body>
 </html>
