@@ -2,29 +2,27 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Payouts Communauté Xeilos</title>
 
   <style>
     :root{
-      --bg: rgba(0,0,0,0.60);
+      --bg: rgba(0,0,0,0.70);
       --fg: #ffffff;
-      --muted: rgba(255,255,255,0.75);
+      --muted: rgba(255,255,255,0.72);
 
-      --bar-bg: rgba(255,255,255,0.15);
-      --bar-fill: #C63B3B; /* ✅ ton rouge Xeilos pour la barre */
-      --shadow: 0 10px 30px rgba(0,0,0,0.35);
+      --bar-bg: rgba(255,255,255,0.18);
+      --bar-fill: #2FBF71; /* ✅ vert billet */
 
+      --shadow: 0 10px 28px rgba(0,0,0,0.35);
       --radius: 14px;
       --pad: 14px;
-
-      --step: 100000; /* fallback si l’API ne renvoie pas step */
     }
 
     *{ box-sizing:border-box; }
     html,body{ margin:0; padding:0; background:transparent; }
     body{
-      font-family: Arial, sans-serif; /* ✅ Arial */
+      font-family: Arial, sans-serif;
       color: var(--fg);
       overflow:hidden;
     }
@@ -37,364 +35,331 @@
       background: var(--bg);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      position: relative;
       display:flex;
       flex-direction:column;
-      gap: 8px;
+      gap: 10px;
+      position: relative;
+      overflow:hidden;
     }
 
-    /* Header row */
+    /* Top row */
     .top{
       display:flex;
       align-items:center;
       justify-content:space-between;
       gap: 12px;
-      font-weight: 700;
-      font-size: 18px;
-      line-height: 1;
-      letter-spacing: 0.2px;
       white-space:nowrap;
     }
 
     .title{
+      font-weight: 700;
+      font-size: 18px;
       display:flex;
       align-items:center;
-      gap: 10px;
-      min-width: 0;
-    }
-    .title span{
-      overflow:hidden;
-      text-overflow:ellipsis;
+      gap: 8px;
+      letter-spacing: 0.2px;
     }
 
-    /* ✅ On supprime "En ligne" : pas d’élément status affiché */
-    .right{
-      display:flex;
-      align-items:center;
-      gap: 10px;
-      font-weight: 600;
+    .total{
+      font-weight: 700; /* ✅ gras comme le titre */
       font-size: 14px;
-      color: var(--muted);
-      white-space:nowrap;
+      color: var(--fg);
+      opacity: 0.95;
     }
 
-    /* Progress numbers */
-    .numbers{
+    /* Progress row */
+    .mid{
+      display:flex;
+      flex-direction:column;
+      gap: 6px;
+    }
+
+    .line{
       display:flex;
       align-items:center;
       justify-content:space-between;
       font-size: 14px;
-      color: var(--muted);
-      white-space:nowrap;
-      gap: 10px;
-    }
-
-    .numbers .left{
-      display:flex;
-      align-items:center;
-      gap: 8px;
-      min-width: 0;
-    }
-    .numbers .left b{
       color: var(--fg);
-      font-weight: 800;
-    }
-    .numbers .right{
-      color: var(--muted);
-      font-weight: 700;
     }
 
-    /* Progress bar */
     .bar{
       width:100%;
       height: 10px;
+      border-radius: 999px;
       background: var(--bar-bg);
-      border-radius: 999px;
       overflow:hidden;
-      position: relative;
-    }
-    .fill{
-      height: 100%;
-      width: 0%;
-      background: var(--bar-fill);
-      border-radius: 999px;
-      transition: width 700ms ease;
+      position:relative;
     }
 
-    /* Footer */
+    .fill{
+      height:100%;
+      width:0%;
+      border-radius: 999px;
+      background: var(--bar-fill);
+      transition: width 650ms ease;
+    }
+
+    /* Bottom row */
     .bottom{
       display:flex;
       align-items:center;
       justify-content:space-between;
-      font-size: 13px;
+      gap: 10px;
+      font-size: 12px;
       color: var(--muted);
       white-space:nowrap;
-      gap: 10px;
     }
-    .bottom .last{
+
+    .last{
       overflow:hidden;
       text-overflow:ellipsis;
-      min-width: 0;
     }
 
-    /* Error */
-    .error{
-      position:absolute;
-      inset:0;
+    /* Errors */
+    .err{
       display:none;
-      align-items:center;
-      justify-content:center;
-      color:#fff;
-      background: rgba(0,0,0,0.7);
-      border-radius: var(--radius);
-      font-weight: 800;
-      letter-spacing: 0.3px;
+      position:absolute;
+      left: var(--pad);
+      right: var(--pad);
+      bottom: var(--pad);
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: rgba(220, 53, 69, 0.22);
+      color: rgba(255,255,255,0.92);
+      font-size: 12px;
     }
 
-    /* ===============================
-       🎆 ANIMATION XEILOS 6s (100k)
-       =============================== */
-
-    .milestoneLayer{
+    /* ===================== 💸 BILL RAIN (6s) ===================== */
+    .fx{
       pointer-events:none;
       position:absolute;
       inset:0;
       overflow:hidden;
-      border-radius: var(--radius);
-      display:none;
+      opacity:0;
     }
+    .fx.active{ opacity:1; }
 
-    .root.milestoneHit .milestoneLayer{
-      display:block;
-    }
-
-    /* glow + pulse */
-    .root.milestoneHit{
-      animation: xeilosPulse 6s ease-in-out 1;
-    }
-
-    @keyframes xeilosPulse{
-      0%   { box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
-      8%   { box-shadow: 0 10px 45px rgba(198,59,59,0.55); }
-      20%  { box-shadow: 0 10px 55px rgba(198,59,59,0.65); }
-      40%  { box-shadow: 0 10px 45px rgba(198,59,59,0.55); }
-      100% { box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
-    }
-
-    /* burst text */
-    .burst{
-      position:absolute;
-      left: 18px;
-      top: 44px;
-      font-size: 28px;
-      font-weight: 900;
-      letter-spacing: 0.5px;
-      color: #fff;
-      text-shadow: 0 8px 25px rgba(0,0,0,0.45);
-      opacity: 0;
-      transform: translateY(8px) scale(0.98);
-      animation: burstIn 6s ease-in-out 1;
-    }
-    @keyframes burstIn{
-      0%   { opacity:0; transform: translateY(10px) scale(0.98); }
-      8%   { opacity:1; transform: translateY(0) scale(1.00); }
-      25%  { opacity:1; }
-      70%  { opacity:1; }
-      100% { opacity:0; transform: translateY(-6px) scale(1.01); }
-    }
-
-    /* money particles */
     .bill{
       position:absolute;
-      width: 18px;
-      height: 10px;
-      border-radius: 2px;
-      background: rgba(255,255,255,0.9);
-      box-shadow: 0 6px 18px rgba(0,0,0,0.25);
-      opacity: 0;
-      transform: translateY(0) rotate(0deg);
-      animation: fly 6s ease-in-out 1;
+      top:-90px;
+      width: 70px;
+      height: 36px;
+      border-radius: 7px;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.16), rgba(255,255,255,0.02)),
+        linear-gradient(0deg, rgba(0,0,0,0.10), rgba(0,0,0,0.00)),
+        #2FBF71;
+      box-shadow: 0 10px 18px rgba(0,0,0,0.22);
+      border: 1px solid rgba(255,255,255,0.18);
+      opacity: 0.95;
+      will-change: transform, top, opacity;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color: rgba(0,0,0,0.55);
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: 0.5px;
+    }
+    .bill::after{ content:"$"; }
+
+    @keyframes fall {
+      0%   { transform: translateY(0) rotate(var(--rot0)); opacity: 0; }
+      10%  { opacity: 0.95; }
+      100% { transform: translateY(260px) rotate(var(--rot1)); opacity: 0.0; }
     }
 
-    /* Variation via CSS custom properties */
-    @keyframes fly{
-      0%   { opacity:0; transform: translate(var(--x0), var(--y0)) rotate(var(--r0)); }
-      10%  { opacity:1; }
-      60%  { opacity:1; }
-      100% { opacity:0; transform: translate(var(--x1), var(--y1)) rotate(var(--r1)); }
-    }
-
-    /* subtle red overlay */
-    .redwash{
-      position:absolute;
-      inset:-20%;
-      background: radial-gradient(circle at 20% 30%, rgba(198,59,59,0.30), transparent 55%),
-                  radial-gradient(circle at 80% 20%, rgba(198,59,59,0.22), transparent 55%),
-                  radial-gradient(circle at 70% 85%, rgba(198,59,59,0.18), transparent 55%);
-      opacity: 0;
-      animation: wash 6s ease-in-out 1;
-    }
-    @keyframes wash{
-      0%{opacity:0}
-      10%{opacity:1}
-      80%{opacity:1}
-      100%{opacity:0}
+    /* petite secousse à 100k */
+    .root.hit{ animation: hit 450ms ease; }
+    @keyframes hit{
+      0%{ transform: translateY(0); }
+      30%{ transform: translateY(-2px); }
+      60%{ transform: translateY(1px); }
+      100%{ transform: translateY(0); }
     }
   </style>
 </head>
 
 <body>
-  <div id="root" class="root">
-    <!-- layer for milestone animation -->
-    <div class="milestoneLayer" id="milestoneLayer">
-      <div class="redwash"></div>
-      <div class="burst">💰 100K ATTEINT !</div>
-
-      <!-- Bills (positions auto via CSS vars) -->
-      <div class="bill" style="--x0: 120px; --y0: 130px; --r0: 10deg; --x1: 40px;  --y1: -60px; --r1: -60deg;"></div>
-      <div class="bill" style="--x0: 220px; --y0: 140px; --r0: -15deg; --x1: 260px; --y1: -70px; --r1: 80deg;"></div>
-      <div class="bill" style="--x0: 340px; --y0: 150px; --r0: 25deg; --x1: 420px; --y1: -80px; --r1: -90deg;"></div>
-      <div class="bill" style="--x0: 520px; --y0: 140px; --r0: -5deg;  --x1: 640px; --y1: -60px; --r1: 70deg;"></div>
-      <div class="bill" style="--x0: 650px; --y0: 150px; --r0: 18deg; --x1: 760px; --y1: -90px; --r1: -100deg;"></div>
-      <div class="bill" style="--x0: 80px;  --y0: 150px; --r0: -20deg; --x1: 140px; --y1: -90px; --r1: 120deg;"></div>
-      <div class="bill" style="--x0: 420px; --y0: 150px; --r0: 40deg; --x1: 360px; --y1: -95px; --r1: -120deg;"></div>
-      <div class="bill" style="--x0: 730px; --y0: 130px; --r0: -35deg;--x1: 620px; --y1: -70px; --r1: 140deg;"></div>
-    </div>
+  <div class="root" id="root">
+    <div class="fx" id="fx"></div>
 
     <div class="top">
-      <div class="title">
-        <span>💰 Payouts Communauté Xeilos</span>
-      </div>
-
-      <!-- ✅ pas de “En ligne” ici -->
-      <div class="right" id="totalCumul">Total cumul : $0</div>
+      <div class="title">💰 Payouts Communauté Xeilos</div>
+      <div class="total" id="totalCumul">Total cumul : $0</div>
     </div>
 
-    <div class="numbers">
-      <div class="left">
-        <b id="currentInStep">$0</b>
-        <span>/</span>
-        <span id="targetInStep">$100,000</span>
+    <div class="mid">
+      <div class="line">
+        <div><span id="current">$0</span> / <span id="target">$100,000</span></div>
       </div>
-      <div class="right" id="cycleInfo"></div>
-    </div>
 
-    <div class="bar">
-      <div id="fill" class="fill"></div>
+      <div class="bar">
+        <div class="fill" id="fill"></div>
+      </div>
     </div>
 
     <div class="bottom">
       <div class="last" id="lastLine">Dernier payout : —</div>
-      <div id="timeAgo">—</div>
+      <div id="ago">—</div>
     </div>
 
-    <div class="error" id="err">Erreur de connexion API</div>
+    <div class="err" id="err">Erreur de connexion API</div>
+
+    <!-- 🔊 Audio milestone -->
+    <audio id="milestoneAudio" preload="auto" src="./cash.mp3"></audio>
   </div>
 
-  <!-- ✅ Audio milestone -->
-  <audio id="milestoneSound" src="/cash.mp3" preload="auto"></audio>
-
   <script>
-    // ✅ Important : l’URL de l’API (même domaine Railway)
-    const API_URL = "/payouts";
+    /* ================= CONFIG ================= */
+    const API_URL = "/payouts";  // même domaine Railway
+    const REFRESH_MS = 5000;
+    const FX_DURATION_MS = 6000;
+    const SOUND_URL = "./cash.mp3"; // ✅ ton fichier
+    const BILL_COUNT = 34; // densité pluie
 
+    /* ================= DOM ================= */
     const root = document.getElementById("root");
+    const fx = document.getElementById("fx");
+    const elCurrent = document.getElementById("current");
+    const elTarget = document.getElementById("target");
     const elFill = document.getElementById("fill");
-    const elCurrent = document.getElementById("currentInStep");
-    const elTarget = document.getElementById("targetInStep");
     const elLast = document.getElementById("lastLine");
-    const elAgo = document.getElementById("timeAgo");
+    const elAgo = document.getElementById("ago");
     const elErr = document.getElementById("err");
     const elTotalCumul = document.getElementById("totalCumul");
-    const elCycleInfo = document.getElementById("cycleInfo");
+    const audio = document.getElementById("milestoneAudio");
 
+    audio.src = SOUND_URL;
+
+    /* ================= HELPERS ================= */
     function fmtUSD(n){
       const v = Number(n || 0);
-      return "$" + v.toLocaleString("en-US");
+      return v.toLocaleString("en-US", { style:"currency", currency:"USD", maximumFractionDigits:0 });
     }
 
     function timeAgo(ts){
-      const t = Number(ts || 0);
-      if (!t) return "—";
-      const diff = Date.now() - t;
-      if (diff < 0) return "—";
-      const s = Math.floor(diff / 1000);
-      if (s < 10) return "à l’instant";
+      if (!ts) return "—";
+      const diff = Date.now() - Number(ts);
+      if (diff < 10_000) return "à l’instant";
+      const s = Math.floor(diff/1000);
       if (s < 60) return `il y a ${s}s`;
-      const m = Math.floor(s / 60);
+      const m = Math.floor(s/60);
       if (m < 60) return `il y a ${m} min`;
-      const h = Math.floor(m / 60);
-      if (h < 24) return `il y a ${h}h`;
-      const d = Math.floor(h / 24);
-      return `il y a ${d}j`;
+      const h = Math.floor(m/60);
+      if (h < 24) return `il y a ${h} h`;
+      const d = Math.floor(h/24);
+      return `il y a ${d} j`;
     }
+
+    function safeUsername(u){
+      if (!u) return "";
+      return String(u).replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    }
+
+    /* ================= FX: BILL RAIN ================= */
+    let fxTimeout = null;
+
+    function startBillRain(){
+      // reset
+      fx.innerHTML = "";
+      fx.classList.add("active");
+      root.classList.add("hit");
+
+      // play sound (browser may block if never had interaction)
+      try {
+        audio.currentTime = 0;
+        audio.volume = 1.0;
+        audio.play().catch(()=>{ /* si bloqué, tant pis */ });
+      } catch(e){}
+
+      // create bills
+      const w = root.clientWidth;
+      for (let i=0; i<BILL_COUNT; i++){
+        const b = document.createElement("div");
+        b.className = "bill";
+
+        const left = Math.random() * (w - 70);
+        const delay = Math.random() * 1200; // étalé
+        const dur = 2200 + Math.random() * 2200;
+        const rot0 = (-25 + Math.random()*50).toFixed(1) + "deg";
+        const rot1 = (-120 + Math.random()*240).toFixed(1) + "deg";
+
+        b.style.left = left + "px";
+        b.style.setProperty("--rot0", rot0);
+        b.style.setProperty("--rot1", rot1);
+        b.style.animation = `fall ${dur}ms linear ${delay}ms forwards`;
+
+        fx.appendChild(b);
+      }
+
+      // stop FX after 6s
+      clearTimeout(fxTimeout);
+      fxTimeout = setTimeout(()=>{
+        fx.classList.remove("active");
+        fx.innerHTML = "";
+        root.classList.remove("hit");
+      }, FX_DURATION_MS);
+    }
+
+    /* ================= STATE ================= */
+    let lastMilestoneSeen = 0;
 
     async function refresh(){
       try{
-        const res = await fetch(API_URL, { cache: "no-store" });
-        if(!res.ok) throw new Error("HTTP " + res.status);
-        const data = await res.json();
-
         elErr.style.display = "none";
+
+        const res = await fetch(API_URL, { cache:"no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
 
         const total = Number(data.total || 0);
         const step = Number(data.step || 100000);
 
-        // ✅ total cumulé
-        elTotalCumul.textContent = "Total cumul : " + fmtUSD(total);
-
-        // ✅ cycle / reset visuel par palier
-        const cycleIndex = Math.floor(total / step);         // 0 => 0-99,999 ; 1 => 100k-199,999 ...
-        const inStep = total % step;                         // ce qu’on affiche dans la barre
-        const pct = Math.max(0, Math.min(100, (inStep / step) * 100));
+        // progress in current cycle
+        const inStep = total % step;
+        const pct = Math.max(0, Math.min(100, (inStep/step)*100));
 
         elCurrent.textContent = fmtUSD(inStep);
         elTarget.textContent = fmtUSD(step);
-
-        // Info cycle (optionnel, discret)
-        if (cycleIndex > 0) {
-          elCycleInfo.textContent = `Cycle ${cycleIndex + 1}`;
-        } else {
-          elCycleInfo.textContent = "";
-        }
-
         elFill.style.width = pct.toFixed(2) + "%";
 
-        // ✅ dernier payout
+        // total cumul
+        elTotalCumul.textContent = `Total cumul : ${fmtUSD(total)}`;
+
+        // last payout line
         const lp = Number(data.lastPayout || 0);
-        const who = (data.lastStudent || "").trim();
-        if(lp > 0){
-          elLast.textContent = `Dernier payout : ${fmtUSD(lp)}${who ? " • " + who : ""}`;
+        const ls = safeUsername(data.lastStudent || "");
+        if (lp > 0){
+          elLast.textContent = `Dernier payout : ${fmtUSD(lp)} • ${ls}`;
         } else {
           elLast.textContent = "Dernier payout : —";
         }
+        elAgo.textContent = timeAgo(data.lastAt || 0);
 
-        elAgo.textContent = timeAgo(data.lastAt);
+        // milestone FX
+        const milestone = Number(data.milestone || 0);
+        const justHit = !!data.milestoneJustHit;
 
-        // ✅ milestone hit : animation 6s + son
-        if (data.milestoneJustHit) {
-          root.classList.add("milestoneHit");
-
-          const sound = document.getElementById("milestoneSound");
-          if (sound) {
-            sound.currentTime = 0;
-            sound.volume = 0.8;
-            sound.play().catch(() => {});
-          }
-
-          setTimeout(() => {
-            root.classList.remove("milestoneHit");
-          }, 6000);
+        // déclenchement : soit justHit, soit milestone augmente
+        if (justHit || (milestone > 0 && milestone !== lastMilestoneSeen)){
+          startBillRain();
         }
+        lastMilestoneSeen = milestone;
 
-      }catch(e){
-        elErr.style.display = "flex";
+      } catch(e){
+        elErr.style.display = "block";
       }
     }
 
-    // refresh rapide au lancement + toutes les 5s
+    // First refresh + interval
     refresh();
-    setInterval(refresh, 5000);
+    setInterval(refresh, REFRESH_MS);
+
+    // Optional: unlock audio on first click (utile si navigateur bloque autoplay)
+    window.addEventListener("click", () => {
+      try { audio.play().then(()=>audio.pause()).catch(()=>{}); } catch(e){}
+    }, { once:true });
   </script>
 </body>
 </html>
