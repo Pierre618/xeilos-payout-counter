@@ -1,0 +1,10 @@
+{
+  "total": 0,
+  "step": 100000,
+  "lastPayout": 0,
+  "lastStudent": "",
+  "lastAt": 0,
+  "countedMessageIds": [],
+  "lastMilestoneAnnounced": 0,
+  "milestoneJustHit": false
+}
