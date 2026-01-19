@@ -4,223 +4,322 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Payouts Communauté Xeilos</title>
+
   <style>
     :root{
-      --bg: rgba(0,0,0,0);
-      --card: rgba(20,20,20,0.85);
-      --text: #ffffff;
+      --bg: rgba(0,0,0,0.60);
+      --fg: #ffffff;
       --muted: rgba(255,255,255,0.75);
-      --track: rgba(255,255,255,0.18);
-      --bar-fill: #C62828; /* 🔴 ton rouge */
-      --shadow: rgba(0,0,0,0.35);
+
+      --bar-bg: rgba(255,255,255,0.15);
+      --bar-fill: #C63B3B; /* ✅ ton rouge Xeilos pour la barre */
+      --shadow: 0 10px 30px rgba(0,0,0,0.35);
+
       --radius: 14px;
+      --pad: 14px;
+
+      --step: 100000; /* fallback si l’API ne renvoie pas step */
     }
 
-    html, body{
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      background: var(--bg);
-      overflow: hidden;
+    *{ box-sizing:border-box; }
+    html,body{ margin:0; padding:0; background:transparent; }
+    body{
+      font-family: Arial, sans-serif; /* ✅ Arial */
+      color: var(--fg);
+      overflow:hidden;
     }
 
     /* Container */
     .root{
-      position: relative;
       width: 800px;
       height: 120px;
-      background: var(--card);
+      padding: var(--pad);
+      background: var(--bg);
       border-radius: var(--radius);
-      box-shadow: 0 10px 30px var(--shadow);
-      padding: 14px 16px;
-      box-sizing: border-box;
-      color: var(--text);
-      overflow: hidden;
+      box-shadow: var(--shadow);
+      position: relative;
+      display:flex;
+      flex-direction:column;
+      gap: 8px;
     }
 
-    /* Header */
+    /* Header row */
     .top{
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
       gap: 12px;
-      margin-bottom: 8px;
+      font-weight: 700;
+      font-size: 18px;
+      line-height: 1;
+      letter-spacing: 0.2px;
+      white-space:nowrap;
     }
 
     .title{
-      font-weight: 700;
-      font-size: 18px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      white-space: nowrap;
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .title span{
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
 
-    /* ✅ On ne montre plus “En ligne” */
-    .status{
-      display: none !important;
-    }
-
-    /* Numbers line */
-    .numbers{
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      margin-bottom: 8px;
-      gap: 12px;
-    }
-
-    .leftNums{
-      font-weight: 700;
+    /* ✅ On supprime "En ligne" : pas d’élément status affiché */
+    .right{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      font-weight: 600;
       font-size: 14px;
-      white-space: nowrap;
+      color: var(--muted);
+      white-space:nowrap;
     }
 
-    .rightNums{
-      font-weight: 700;
-      font-size: 13px;
+    /* Progress numbers */
+    .numbers{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      font-size: 14px;
       color: var(--muted);
-      white-space: nowrap;
+      white-space:nowrap;
+      gap: 10px;
+    }
+
+    .numbers .left{
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      min-width: 0;
+    }
+    .numbers .left b{
+      color: var(--fg);
+      font-weight: 800;
+    }
+    .numbers .right{
+      color: var(--muted);
+      font-weight: 700;
     }
 
     /* Progress bar */
     .bar{
-      width: 100%;
+      width:100%;
       height: 10px;
-      background: var(--track);
+      background: var(--bar-bg);
       border-radius: 999px;
-      overflow: hidden;
+      overflow:hidden;
+      position: relative;
     }
     .fill{
-      width: 0%;
       height: 100%;
+      width: 0%;
       background: var(--bar-fill);
       border-radius: 999px;
-      transition: width 600ms ease;
+      transition: width 700ms ease;
     }
 
     /* Footer */
-    .footer{
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      margin-top: 8px;
-      font-size: 12px;
+    .bottom{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      font-size: 13px;
       color: var(--muted);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      white-space:nowrap;
+      gap: 10px;
     }
-    .footerLeft{
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .footerRight{
-      flex: 0 0 auto;
+    .bottom .last{
+      overflow:hidden;
+      text-overflow:ellipsis;
+      min-width: 0;
     }
 
-    .err{
-      position: absolute;
-      left: 16px;
-      bottom: 10px;
-      font-size: 12px;
-      color: #ffb4b4;
-      display: none;
+    /* Error */
+    .error{
+      position:absolute;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      color:#fff;
+      background: rgba(0,0,0,0.7);
+      border-radius: var(--radius);
+      font-weight: 800;
+      letter-spacing: 0.3px;
     }
 
-    /* =========================
-       💵 MONEY RAIN ANIMATION
-       ========================= */
-    .money-layer{
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      overflow: hidden;
+    /* ===============================
+       🎆 ANIMATION XEILOS 6s (100k)
+       =============================== */
+
+    .milestoneLayer{
+      pointer-events:none;
+      position:absolute;
+      inset:0;
+      overflow:hidden;
+      border-radius: var(--radius);
+      display:none;
     }
 
-    .bill{
-      position: absolute;
-      top: -40px;
-      font-size: 22px;
-      opacity: 0.95;
-      filter: drop-shadow(0 6px 8px rgba(0,0,0,0.35));
-      animation: fall linear forwards;
-      will-change: transform, opacity;
-      user-select: none;
+    .root.milestoneHit .milestoneLayer{
+      display:block;
     }
 
-    @keyframes fall{
-      0%   { transform: translate3d(0, -30px, 0) rotate(0deg); opacity: 0; }
-      10%  { opacity: 1; }
-      100% { transform: translate3d(var(--dx), 170px, 0) rotate(var(--rot)); opacity: 0; }
+    /* glow + pulse */
+    .root.milestoneHit{
+      animation: xeilosPulse 6s ease-in-out 1;
     }
 
-    /* Petit flash “milestone” */
-    .flash{
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.14), rgba(255,255,255,0));
+    @keyframes xeilosPulse{
+      0%   { box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
+      8%   { box-shadow: 0 10px 45px rgba(198,59,59,0.55); }
+      20%  { box-shadow: 0 10px 55px rgba(198,59,59,0.65); }
+      40%  { box-shadow: 0 10px 45px rgba(198,59,59,0.55); }
+      100% { box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
+    }
+
+    /* burst text */
+    .burst{
+      position:absolute;
+      left: 18px;
+      top: 44px;
+      font-size: 28px;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      color: #fff;
+      text-shadow: 0 8px 25px rgba(0,0,0,0.45);
       opacity: 0;
-      pointer-events: none;
-      animation: flash 900ms ease-out forwards;
+      transform: translateY(8px) scale(0.98);
+      animation: burstIn 6s ease-in-out 1;
     }
-    @keyframes flash{
-      0% { opacity: 0; }
-      18% { opacity: 1; }
-      100% { opacity: 0; }
+    @keyframes burstIn{
+      0%   { opacity:0; transform: translateY(10px) scale(0.98); }
+      8%   { opacity:1; transform: translateY(0) scale(1.00); }
+      25%  { opacity:1; }
+      70%  { opacity:1; }
+      100% { opacity:0; transform: translateY(-6px) scale(1.01); }
+    }
+
+    /* money particles */
+    .bill{
+      position:absolute;
+      width: 18px;
+      height: 10px;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.9);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+      opacity: 0;
+      transform: translateY(0) rotate(0deg);
+      animation: fly 6s ease-in-out 1;
+    }
+
+    /* Variation via CSS custom properties */
+    @keyframes fly{
+      0%   { opacity:0; transform: translate(var(--x0), var(--y0)) rotate(var(--r0)); }
+      10%  { opacity:1; }
+      60%  { opacity:1; }
+      100% { opacity:0; transform: translate(var(--x1), var(--y1)) rotate(var(--r1)); }
+    }
+
+    /* subtle red overlay */
+    .redwash{
+      position:absolute;
+      inset:-20%;
+      background: radial-gradient(circle at 20% 30%, rgba(198,59,59,0.30), transparent 55%),
+                  radial-gradient(circle at 80% 20%, rgba(198,59,59,0.22), transparent 55%),
+                  radial-gradient(circle at 70% 85%, rgba(198,59,59,0.18), transparent 55%);
+      opacity: 0;
+      animation: wash 6s ease-in-out 1;
+    }
+    @keyframes wash{
+      0%{opacity:0}
+      10%{opacity:1}
+      80%{opacity:1}
+      100%{opacity:0}
     }
   </style>
 </head>
 
 <body>
-  <div class="root" id="root">
-    <div class="money-layer" id="money"></div>
+  <div id="root" class="root">
+    <!-- layer for milestone animation -->
+    <div class="milestoneLayer" id="milestoneLayer">
+      <div class="redwash"></div>
+      <div class="burst">💰 100K ATTEINT !</div>
+
+      <!-- Bills (positions auto via CSS vars) -->
+      <div class="bill" style="--x0: 120px; --y0: 130px; --r0: 10deg; --x1: 40px;  --y1: -60px; --r1: -60deg;"></div>
+      <div class="bill" style="--x0: 220px; --y0: 140px; --r0: -15deg; --x1: 260px; --y1: -70px; --r1: 80deg;"></div>
+      <div class="bill" style="--x0: 340px; --y0: 150px; --r0: 25deg; --x1: 420px; --y1: -80px; --r1: -90deg;"></div>
+      <div class="bill" style="--x0: 520px; --y0: 140px; --r0: -5deg;  --x1: 640px; --y1: -60px; --r1: 70deg;"></div>
+      <div class="bill" style="--x0: 650px; --y0: 150px; --r0: 18deg; --x1: 760px; --y1: -90px; --r1: -100deg;"></div>
+      <div class="bill" style="--x0: 80px;  --y0: 150px; --r0: -20deg; --x1: 140px; --y1: -90px; --r1: 120deg;"></div>
+      <div class="bill" style="--x0: 420px; --y0: 150px; --r0: 40deg; --x1: 360px; --y1: -95px; --r1: -120deg;"></div>
+      <div class="bill" style="--x0: 730px; --y0: 130px; --r0: -35deg;--x1: 620px; --y1: -70px; --r1: 140deg;"></div>
+    </div>
 
     <div class="top">
-      <div class="title">💰 Payouts Communauté Xeilos</div>
-      <div class="status" id="status">En ligne ✅</div>
+      <div class="title">
+        <span>💰 Payouts Communauté Xeilos</span>
+      </div>
+
+      <!-- ✅ pas de “En ligne” ici -->
+      <div class="right" id="totalCumul">Total cumul : $0</div>
     </div>
 
     <div class="numbers">
-      <div class="leftNums"><span id="cur">$0</span> / <span id="target">$100,000</span></div>
-      <div class="rightNums" id="totalCumul">Total cumul : $0</div>
+      <div class="left">
+        <b id="currentInStep">$0</b>
+        <span>/</span>
+        <span id="targetInStep">$100,000</span>
+      </div>
+      <div class="right" id="cycleInfo"></div>
     </div>
 
-    <div class="bar"><div class="fill" id="fill"></div></div>
-
-    <div class="footer">
-      <div class="footerLeft" id="last">Dernier payout : —</div>
-      <div class="footerRight" id="meta">—</div>
+    <div class="bar">
+      <div id="fill" class="fill"></div>
     </div>
 
-    <div class="err" id="err">Erreur de connexion API</div>
+    <div class="bottom">
+      <div class="last" id="lastLine">Dernier payout : —</div>
+      <div id="timeAgo">—</div>
+    </div>
+
+    <div class="error" id="err">Erreur de connexion API</div>
   </div>
 
+  <!-- ✅ Audio milestone -->
+  <audio id="milestoneSound" src="/cash.mp3" preload="auto"></audio>
+
   <script>
-    // 🔧 L’API est servie par le même domaine Railway
+    // ✅ Important : l’URL de l’API (même domaine Railway)
     const API_URL = "/payouts";
 
-    const elCur = document.getElementById("cur");
-    const elTarget = document.getElementById("target");
+    const root = document.getElementById("root");
     const elFill = document.getElementById("fill");
-    const elLast = document.getElementById("last");
-    const elMeta = document.getElementById("meta");
+    const elCurrent = document.getElementById("currentInStep");
+    const elTarget = document.getElementById("targetInStep");
+    const elLast = document.getElementById("lastLine");
+    const elAgo = document.getElementById("timeAgo");
     const elErr = document.getElementById("err");
     const elTotalCumul = document.getElementById("totalCumul");
-    const moneyLayer = document.getElementById("money");
-    const root = document.getElementById("root");
+    const elCycleInfo = document.getElementById("cycleInfo");
 
     function fmtUSD(n){
       const v = Number(n || 0);
-      return v.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+      return "$" + v.toLocaleString("en-US");
     }
 
     function timeAgo(ts){
       const t = Number(ts || 0);
       if (!t) return "—";
       const diff = Date.now() - t;
-      if (diff < 10000) return "à l’instant";
+      if (diff < 0) return "—";
       const s = Math.floor(diff / 1000);
+      if (s < 10) return "à l’instant";
       if (s < 60) return `il y a ${s}s`;
       const m = Math.floor(s / 60);
       if (m < 60) return `il y a ${m} min`;
@@ -230,84 +329,70 @@
       return `il y a ${d}j`;
     }
 
-    // =========================
-    // 💵 Animation money rain
-    // =========================
-    function triggerMoneyRain(){
-      // flash
-      const flash = document.createElement("div");
-      flash.className = "flash";
-      root.appendChild(flash);
-      setTimeout(() => flash.remove(), 1000);
-
-      const symbols = ["💵","💲","$","💰","💵","💲"];
-      const count = 26;           // quantité de "billets"
-      const durationMin = 900;    // ms
-      const durationMax = 1700;   // ms
-
-      for (let i = 0; i < count; i++){
-        const s = document.createElement("div");
-        s.className = "bill";
-        s.textContent = symbols[Math.floor(Math.random() * symbols.length)];
-
-        const left = Math.random() * 100; // %
-        const dx = (Math.random() * 220 - 110) + "px";
-        const rot = (Math.random() * 380 - 190) + "deg";
-        const dur = Math.floor(durationMin + Math.random() * (durationMax - durationMin));
-
-        s.style.left = left + "%";
-        s.style.setProperty("--dx", dx);
-        s.style.setProperty("--rot", rot);
-        s.style.animationDuration = dur + "ms";
-        s.style.fontSize = (18 + Math.random() * 16) + "px";
-
-        moneyLayer.appendChild(s);
-        setTimeout(() => s.remove(), dur + 200);
-      }
-    }
-
     async function refresh(){
       try{
-        elErr.style.display = "none";
-
         const res = await fetch(API_URL, { cache: "no-store" });
-        if (!res.ok) throw new Error("HTTP " + res.status);
+        if(!res.ok) throw new Error("HTTP " + res.status);
         const data = await res.json();
+
+        elErr.style.display = "none";
 
         const total = Number(data.total || 0);
         const step = Number(data.step || 100000);
 
-        // Progress "cycle" (0->100k, puis reset visuel)
-        const inStep = total % step;                // 0..99999
-        const pct = Math.max(0, Math.min(100, (inStep / step) * 100));
-
-        elCur.textContent = fmtUSD(inStep);
-        elTarget.textContent = fmtUSD(step);
-        elFill.style.width = pct.toFixed(2) + "%";
-
+        // ✅ total cumulé
         elTotalCumul.textContent = "Total cumul : " + fmtUSD(total);
 
-        // Dernier payout
+        // ✅ cycle / reset visuel par palier
+        const cycleIndex = Math.floor(total / step);         // 0 => 0-99,999 ; 1 => 100k-199,999 ...
+        const inStep = total % step;                         // ce qu’on affiche dans la barre
+        const pct = Math.max(0, Math.min(100, (inStep / step) * 100));
+
+        elCurrent.textContent = fmtUSD(inStep);
+        elTarget.textContent = fmtUSD(step);
+
+        // Info cycle (optionnel, discret)
+        if (cycleIndex > 0) {
+          elCycleInfo.textContent = `Cycle ${cycleIndex + 1}`;
+        } else {
+          elCycleInfo.textContent = "";
+        }
+
+        elFill.style.width = pct.toFixed(2) + "%";
+
+        // ✅ dernier payout
         const lp = Number(data.lastPayout || 0);
-        const ls = (data.lastStudent || "").trim();
-        if (lp > 0){
-          elLast.textContent = `Dernier payout : ${fmtUSD(lp)} • ${ls || "—"}`;
+        const who = (data.lastStudent || "").trim();
+        if(lp > 0){
+          elLast.textContent = `Dernier payout : ${fmtUSD(lp)}${who ? " • " + who : ""}`;
         } else {
           elLast.textContent = "Dernier payout : —";
         }
 
-        elMeta.textContent = timeAgo(data.lastAt);
+        elAgo.textContent = timeAgo(data.lastAt);
 
-        // ✅ Animation au passage de palier (one-shot via API)
-        if (data.milestoneJustHit){
-          triggerMoneyRain();
+        // ✅ milestone hit : animation 6s + son
+        if (data.milestoneJustHit) {
+          root.classList.add("milestoneHit");
+
+          const sound = document.getElementById("milestoneSound");
+          if (sound) {
+            sound.currentTime = 0;
+            sound.volume = 0.8;
+            sound.play().catch(() => {});
+          }
+
+          setTimeout(() => {
+            root.classList.remove("milestoneHit");
+          }, 6000);
         }
 
-      } catch (e){
-        elErr.style.display = "block";
+      }catch(e){
+        elErr.style.display = "flex";
       }
     }
 
+    // refresh rapide au lancement + toutes les 5s
     refresh();
     setInterval(refresh, 5000);
   </script>
