@@ -1,28 +1,22 @@
 import express from "express";
-import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
-
 import { Client, GatewayIntentBits, Partials } from "discord.js";
 import { Low } from "lowdb";
 import { JSONFile } from "lowdb/node";
-
-/* ================= PATH HELPERS (ESM) ================= */
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 /* ================= CONFIG ================= */
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 const PAYOUT_CHANNEL_ID = process.env.PAYOUT_CHANNEL_ID;
 const VALIDATOR_ROLE_ID = process.env.VALIDATOR_ROLE_ID;
-const STEP = Number(process.env.STEP || 100000); // $100k par défaut
+const STEP = Number(process.env.STEP || 100000);
 
-if (!DISCORD_TOKEN) console.warn("⚠️ DISCORD_TOKEN manquant");
-if (!PAYOUT_CHANNEL_ID) console.warn("⚠️ PAYOUT_CHANNEL_ID manquant");
-if (!VALIDATOR_ROLE_ID) console.warn("⚠️ VALIDATOR_ROLE_ID manquant");
+/* ================= PATH HELPERS ================= */
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /* ================= DATABASE ================= */
-const adapter = new JSONFile(path.join(__dirname, "data.json"));
+const adapter = new JSONFile("data.json");
 const db = new Low(adapter, {
   total: 0,
   step: STEP,
@@ -33,7 +27,6 @@ const db = new Low(adapter, {
   lastMilestoneAnnounced: 0,
   milestoneJustHit: false,
 });
-
 await db.read();
 db.data ||= {
   total: 0,
@@ -45,7 +38,6 @@ db.data ||= {
   lastMilestoneAnnounced: 0,
   milestoneJustHit: false,
 };
-db.data.step = STEP; // keep in sync
 await db.write();
 
 /* ================= DISCORD BOT ================= */
@@ -60,15 +52,15 @@ const client = new Client({
 });
 
 function parsePayoutAmount(text) {
-  // On compte uniquement les messages qui contiennent "PAYOUT"
-  if (!text || !text.toUpperCase().includes("PAYOUT")) return null;
+  if (!text) return null;
+  if (!text.toUpperCase().includes("PAYOUT")) return null;
 
-  // Cherche un nombre du style: 1,000 / 1000 / $1,000 / 1 000 etc.
+  // Ex: "PAYOUT $500" / "PAYOUT 500$" / "PAYOUT 1 200$"
   const match = text.match(/(\$?\s*\d[\d\s,]*\s*\$?)/);
   if (!match) return null;
 
   const amount = Number(match[1].replace(/[^\d]/g, ""));
-  return Number.isFinite(amount) && amount > 0 ? amount : null;
+  return amount > 0 ? amount : null;
 }
 
 client.once("ready", () => {
@@ -85,56 +77,64 @@ client.on("messageReactionAdd", async (reaction, user) => {
     const message = reaction.message;
     if (!message.guild) return;
 
-    // sécurité: il faut que tout soit configuré
-    if (!PAYOUT_CHANNEL_ID || !VALIDATOR_ROLE_ID) return;
-
+    // 1) Bon channel
     if (message.channelId !== PAYOUT_CHANNEL_ID) return;
+
+    // 2) Bonne emoji
     if (reaction.emoji.name !== "✅") return;
 
+    // 3) Validateur uniquement
     const member = await message.guild.members.fetch(user.id);
     if (!member.roles.cache.has(VALIDATOR_ROLE_ID)) return;
 
     await db.read();
 
-    // anti double comptage
+    // 4) Déjà compté ?
     if (db.data.countedMessageIds.includes(message.id)) return;
 
+    // 5) Montant
     const amount = parsePayoutAmount(message.content);
     if (!amount) return;
 
+    // Update DB
     db.data.total += amount;
     db.data.lastPayout = amount;
     db.data.lastStudent = message.author?.username || "";
     db.data.lastAt = Date.now();
     db.data.countedMessageIds.push(message.id);
 
-    // milestone (one-shot)
+    // Milestone / step
     const currentMilestone = Math.floor(db.data.total / STEP) * STEP;
     if (currentMilestone > db.data.lastMilestoneAnnounced) {
       db.data.lastMilestoneAnnounced = currentMilestone;
-      db.data.milestoneJustHit = true;
+      db.data.milestoneJustHit = true; // one-shot pour l’overlay
     }
 
     await db.write();
+
+    console.log(
+      `✅ Payout validé: +${amount}$ | total=${db.data.total}$ | milestone=${db.data.lastMilestoneAnnounced}$`
+    );
   } catch (err) {
-    console.error("❌ Erreur messageReactionAdd:", err);
+    console.error("Erreur reactionAdd:", err);
   }
 });
 
-/* ================= API (EXPRESS) ================= */
+/* ================= EXPRESS API ================= */
 const app = express();
-app.use(cors());
 
-// sert /public
+/* ================= ÉTAPE 2 — LE BLOC À AJOUTER (AVANT app.listen) ================= */
+/* ✅ Sert le dossier /public (widget.html + cash.mp3 etc.) */
 app.use(express.static(path.join(__dirname, "public")));
 
-// page principale: widget
-app.get("/", (req, res) => {
+/* ✅ Route racine → affiche widget.html */
+app.get("/", (_req, res) => {
   res.sendFile(path.join(__dirname, "public", "widget.html"));
 });
+/* ================= FIN ÉTAPE 2 ================= */
 
-// endpoint JSON
-app.get("/payouts", async (req, res) => {
+/* ✅ Endpoint JSON pour l’overlay */
+app.get("/payouts", async (_req, res) => {
   await db.read();
 
   const payload = {
@@ -147,21 +147,18 @@ app.get("/payouts", async (req, res) => {
     milestoneJustHit: db.data.milestoneJustHit,
   };
 
-  // one-shot milestone reset
+  // one-shot milestone
   db.data.milestoneJustHit = false;
   await db.write();
 
   res.json(payload);
 });
 
-// health simple
-app.get("/health", (req, res) => {
-  res.status(200).send("ok");
-});
-
+/* ================= START SERVER ================= */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log("🌍 API active sur le port", PORT);
+  console.log("🌍 API + widget actifs sur le port", PORT);
 });
 
+/* ================= LOGIN BOT ================= */
 client.login(DISCORD_TOKEN);
