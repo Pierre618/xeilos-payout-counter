@@ -2,17 +2,18 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Payouts Communauté Xeilos</title>
 
   <style>
     :root{
-      --bg: rgba(0,0,0,0.70);
+      --bg: rgba(0,0,0,0.60);
       --fg: #ffffff;
-      --muted: rgba(255,255,255,0.72);
+      --muted: rgba(255,255,255,0.75);
 
-      --bar-bg: rgba(255,255,255,0.18);
-      --bar-fill: #2FBF71; /* ✅ vert billet */
+      /* ✅ barre verte "billet" */
+      --bar-bg: rgba(255,255,255,0.15);
+      --bar-fill: #2fbf5b;
 
       --shadow: 0 10px 28px rgba(0,0,0,0.35);
       --radius: 14px;
@@ -20,16 +21,15 @@
     }
 
     *{ box-sizing:border-box; }
-    html,body{ margin:0; padding:0; background:transparent; }
+    html,body{ margin:0; padding:0; background:transparent; overflow:hidden; }
     body{
-      font-family: Arial, sans-serif;
+      font-family: Arial, sans-serif; /* ✅ Arial */
       color: var(--fg);
-      overflow:hidden;
     }
 
     /* Container */
     .root{
-      width: 800px;
+      width: 900px;
       height: 120px;
       padding: var(--pad);
       background: var(--bg);
@@ -37,74 +37,77 @@
       box-shadow: var(--shadow);
       display:flex;
       flex-direction:column;
-      gap: 10px;
-      position: relative;
+      gap: 8px;
+      position:relative;
       overflow:hidden;
     }
 
-    /* Top row */
+    /* Header */
     .top{
       display:flex;
       align-items:center;
       justify-content:space-between;
-      gap: 12px;
+      gap:12px;
+      font-size: 18px;
+      font-weight: 700;
+      line-height:1;
       white-space:nowrap;
     }
 
     .title{
-      font-weight: 700;
-      font-size: 18px;
       display:flex;
       align-items:center;
-      gap: 8px;
-      letter-spacing: 0.2px;
+      gap:10px;
+      min-width: 0;
+    }
+    .title span{
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
 
+    /* Total cumul (gras comme le titre) */
     .total{
-      font-weight: 700; /* ✅ gras comme le titre */
-      font-size: 14px;
-      color: var(--fg);
+      font-weight: 700;
       opacity: 0.95;
+      font-size: 16px;
     }
 
-    /* Progress row */
+    /* Progress line */
     .mid{
       display:flex;
-      flex-direction:column;
-      gap: 6px;
+      align-items:center;
+      gap: 10px;
     }
 
-    .line{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
+    .label{
       font-size: 14px;
-      color: var(--fg);
+      color: var(--muted);
+      min-width: 140px;
+      white-space:nowrap;
     }
 
     .bar{
-      width:100%;
+      flex: 1;
       height: 10px;
-      border-radius: 999px;
       background: var(--bar-bg);
+      border-radius: 999px;
       overflow:hidden;
       position:relative;
     }
-
     .fill{
       height:100%;
-      width:0%;
-      border-radius: 999px;
+      width: 0%;
       background: var(--bar-fill);
-      transition: width 650ms ease;
+      border-radius: 999px;
+      transition: width 600ms ease;
     }
 
-    /* Bottom row */
+    /* Footer */
     .bottom{
       display:flex;
       align-items:center;
       justify-content:space-between;
-      gap: 10px;
+      gap:10px;
       font-size: 12px;
       color: var(--muted);
       white-space:nowrap;
@@ -115,251 +118,194 @@
       text-overflow:ellipsis;
     }
 
-    /* Errors */
     .err{
       display:none;
-      position:absolute;
-      left: var(--pad);
-      right: var(--pad);
-      bottom: var(--pad);
-      padding: 8px 10px;
-      border-radius: 10px;
-      background: rgba(220, 53, 69, 0.22);
-      color: rgba(255,255,255,0.92);
+      color:#ffb0b0;
       font-size: 12px;
+      white-space:nowrap;
     }
 
-    /* ===================== 💸 BILL RAIN (6s) ===================== */
-    .fx{
-      pointer-events:none;
+    /* ===== pluie de billets (6s) ===== */
+    .rain{
       position:absolute;
       inset:0;
+      pointer-events:none;
       overflow:hidden;
-      opacity:0;
+      display:none;
     }
-    .fx.active{ opacity:1; }
+    .rain.show{ display:block; }
 
     .bill{
       position:absolute;
-      top:-90px;
-      width: 70px;
-      height: 36px;
-      border-radius: 7px;
-      background:
-        linear-gradient(135deg, rgba(255,255,255,0.16), rgba(255,255,255,0.02)),
-        linear-gradient(0deg, rgba(0,0,0,0.10), rgba(0,0,0,0.00)),
-        #2FBF71;
-      box-shadow: 0 10px 18px rgba(0,0,0,0.22);
-      border: 1px solid rgba(255,255,255,0.18);
+      top:-40px;
+      width: 46px;
+      height: 26px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, rgba(47,191,91,0.95), rgba(170,255,200,0.85));
+      box-shadow: 0 6px 18px rgba(0,0,0,0.25);
       opacity: 0.95;
-      will-change: transform, top, opacity;
+      transform: rotate(0deg);
+      animation: fall 6s linear forwards;
+    }
+    .bill::after{
+      content:"$";
+      position:absolute;
+      inset:0;
       display:flex;
       align-items:center;
       justify-content:center;
-      color: rgba(0,0,0,0.55);
-      font-weight: 700;
-      font-size: 15px;
-      letter-spacing: 0.5px;
+      font-weight: 900;
+      color: rgba(0,0,0,0.35);
+      font-size: 16px;
     }
-    .bill::after{ content:"$"; }
 
-    @keyframes fall {
-      0%   { transform: translateY(0) rotate(var(--rot0)); opacity: 0; }
+    @keyframes fall{
+      0%   { transform: translateY(-40px) rotate(0deg); opacity: 0; }
       10%  { opacity: 0.95; }
-      100% { transform: translateY(260px) rotate(var(--rot1)); opacity: 0.0; }
-    }
-
-    /* petite secousse à 100k */
-    .root.hit{ animation: hit 450ms ease; }
-    @keyframes hit{
-      0%{ transform: translateY(0); }
-      30%{ transform: translateY(-2px); }
-      60%{ transform: translateY(1px); }
-      100%{ transform: translateY(0); }
+      100% { transform: translateY(200px) rotate(360deg); opacity: 0; }
     }
   </style>
 </head>
 
 <body>
   <div class="root" id="root">
-    <div class="fx" id="fx"></div>
+    <div class="rain" id="rain"></div>
 
     <div class="top">
-      <div class="title">💰 Payouts Communauté Xeilos</div>
+      <div class="title">
+        💰 <span>Payouts Communauté Xeilos</span>
+      </div>
+
       <div class="total" id="totalCumul">Total cumul : $0</div>
     </div>
 
     <div class="mid">
-      <div class="line">
-        <div><span id="current">$0</span> / <span id="target">$100,000</span></div>
-      </div>
-
-      <div class="bar">
-        <div class="fill" id="fill"></div>
-      </div>
+      <div class="label" id="cycleLabel">$0 / $100,000</div>
+      <div class="bar"><div class="fill" id="fill"></div></div>
     </div>
 
     <div class="bottom">
       <div class="last" id="lastLine">Dernier payout : —</div>
-      <div id="ago">—</div>
+      <div class="err" id="err">Hors ligne ✖</div>
     </div>
-
-    <div class="err" id="err">Erreur de connexion API</div>
-
-    <!-- 🔊 Audio milestone -->
-    <audio id="milestoneAudio" preload="auto" src="./cash.mp3"></audio>
   </div>
 
+  <!-- ✅ Sons -->
+  <audio id="sndPayout" preload="auto" src="./cash.mp3"></audio>
+  <!-- ⚠️ ajoute milestone.mp3 dans /public/ (sinon fallback automatique) -->
+  <audio id="sndMilestone" preload="auto" src="./milestone.mp3"></audio>
+
   <script>
-    /* ================= CONFIG ================= */
-    const API_URL = "/payouts";  // même domaine Railway
-    const REFRESH_MS = 5000;
-    const FX_DURATION_MS = 6000;
-    const SOUND_URL = "./cash.mp3"; // ✅ ton fichier
-    const BILL_COUNT = 34; // densité pluie
+    const API_URL = "/payouts";
+    const STEP_FALLBACK = 100000;
 
-    /* ================= DOM ================= */
-    const root = document.getElementById("root");
-    const fx = document.getElementById("fx");
-    const elCurrent = document.getElementById("current");
-    const elTarget = document.getElementById("target");
-    const elFill = document.getElementById("fill");
-    const elLast = document.getElementById("lastLine");
-    const elAgo = document.getElementById("ago");
-    const elErr = document.getElementById("err");
-    const elTotalCumul = document.getElementById("totalCumul");
-    const audio = document.getElementById("milestoneAudio");
+    const fill = document.getElementById("fill");
+    const cycleLabel = document.getElementById("cycleLabel");
+    const totalCumul = document.getElementById("totalCumul");
+    const lastLine = document.getElementById("lastLine");
+    const err = document.getElementById("err");
 
-    audio.src = SOUND_URL;
+    const sndPayout = document.getElementById("sndPayout");
+    const sndMilestone = document.getElementById("sndMilestone");
 
-    /* ================= HELPERS ================= */
-    function fmtUSD(n){
-      const v = Number(n || 0);
-      return v.toLocaleString("en-US", { style:"currency", currency:"USD", maximumFractionDigits:0 });
+    const rain = document.getElementById("rain");
+
+    function money(n){
+      const x = Number(n || 0);
+      return "$" + x.toLocaleString("en-US");
     }
 
-    function timeAgo(ts){
-      if (!ts) return "—";
-      const diff = Date.now() - Number(ts);
-      if (diff < 10_000) return "à l’instant";
-      const s = Math.floor(diff/1000);
-      if (s < 60) return `il y a ${s}s`;
-      const m = Math.floor(s/60);
-      if (m < 60) return `il y a ${m} min`;
-      const h = Math.floor(m/60);
-      if (h < 24) return `il y a ${h} h`;
-      const d = Math.floor(h/24);
-      return `il y a ${d} j`;
+    function safePlay(audioEl){
+      if (!audioEl) return;
+      try{
+        audioEl.currentTime = 0;
+        const p = audioEl.play();
+        if (p && typeof p.catch === "function") p.catch(()=>{});
+      }catch(e){}
     }
 
-    function safeUsername(u){
-      if (!u) return "";
-      return String(u).replace(/</g,"&lt;").replace(/>/g,"&gt;");
-    }
+    // fallback: si milestone.mp3 n'existe pas, on rejoue cash.mp3
+    sndMilestone.addEventListener("error", () => {
+      sndMilestone.src = "./cash.mp3";
+    });
 
-    /* ================= FX: BILL RAIN ================= */
-    let fxTimeout = null;
-
-    function startBillRain(){
+    function startRainBills(durationMs = 6000){
       // reset
-      fx.innerHTML = "";
-      fx.classList.add("active");
-      root.classList.add("hit");
+      rain.innerHTML = "";
+      rain.classList.add("show");
 
-      // play sound (browser may block if never had interaction)
-      try {
-        audio.currentTime = 0;
-        audio.volume = 1.0;
-        audio.play().catch(()=>{ /* si bloqué, tant pis */ });
-      } catch(e){}
-
-      // create bills
-      const w = root.clientWidth;
-      for (let i=0; i<BILL_COUNT; i++){
+      // créer ~35 billets
+      const count = 35;
+      for (let i=0;i<count;i++){
         const b = document.createElement("div");
         b.className = "bill";
+        const left = Math.random() * 100;
+        const delay = Math.random() * 0.8; // léger étalement
+        const scale = 0.75 + Math.random() * 0.6;
 
-        const left = Math.random() * (w - 70);
-        const delay = Math.random() * 1200; // étalé
-        const dur = 2200 + Math.random() * 2200;
-        const rot0 = (-25 + Math.random()*50).toFixed(1) + "deg";
-        const rot1 = (-120 + Math.random()*240).toFixed(1) + "deg";
+        b.style.left = left + "%";
+        b.style.animationDelay = delay + "s";
+        b.style.transform = `rotate(${Math.random()*180-90}deg) scale(${scale})`;
 
-        b.style.left = left + "px";
-        b.style.setProperty("--rot0", rot0);
-        b.style.setProperty("--rot1", rot1);
-        b.style.animation = `fall ${dur}ms linear ${delay}ms forwards`;
-
-        fx.appendChild(b);
+        rain.appendChild(b);
       }
 
-      // stop FX after 6s
-      clearTimeout(fxTimeout);
-      fxTimeout = setTimeout(()=>{
-        fx.classList.remove("active");
-        fx.innerHTML = "";
-        root.classList.remove("hit");
-      }, FX_DURATION_MS);
+      setTimeout(() => {
+        rain.classList.remove("show");
+        rain.innerHTML = "";
+      }, durationMs);
     }
 
-    /* ================= STATE ================= */
-    let lastMilestoneSeen = 0;
+    // Pour détecter un nouveau payout (donc nouvelle réaction ✅)
+    // On se base sur lastAt (timestamp) renvoyé par l'API.
+    let lastSeenAt = Number(localStorage.getItem("xeilos_lastAt") || 0);
 
     async function refresh(){
       try{
-        elErr.style.display = "none";
-
         const res = await fetch(API_URL, { cache:"no-store" });
         if (!res.ok) throw new Error("HTTP " + res.status);
         const data = await res.json();
 
+        err.style.display = "none";
+
         const total = Number(data.total || 0);
-        const step = Number(data.step || 100000);
+        const step = Number(data.step || STEP_FALLBACK);
+        const lastPayout = Number(data.lastPayout || 0);
+        const lastAt = Number(data.lastAt || 0);
 
-        // progress in current cycle
+        // cycle: on affiche l'avancement dans le cycle actuel
         const inStep = total % step;
-        const pct = Math.max(0, Math.min(100, (inStep/step)*100));
+        const pct = Math.max(0, Math.min(100, (inStep / step) * 100));
 
-        elCurrent.textContent = fmtUSD(inStep);
-        elTarget.textContent = fmtUSD(step);
-        elFill.style.width = pct.toFixed(2) + "%";
+        fill.style.width = pct.toFixed(2) + "%";
+        cycleLabel.textContent = `${money(inStep)} / ${money(step)}`;
+        totalCumul.textContent = `Total cumul : ${money(total)}`;
 
-        // total cumul
-        elTotalCumul.textContent = `Total cumul : ${fmtUSD(total)}`;
+        // ✅ plus de pseudo, seulement montant
+        lastLine.textContent = lastPayout > 0 ? `Dernier payout : ${money(lastPayout)}` : "Dernier payout : —";
 
-        // last payout line
-        const lp = Number(data.lastPayout || 0);
-        const ls = safeUsername(data.lastStudent || "");
-        if (lp > 0){
-          elLast.textContent = `Dernier payout : ${fmtUSD(lp)} • ${ls}`;
-        } else {
-          elLast.textContent = "Dernier payout : —";
+        // 🔊 nouveau payout = son
+        const isNewPayout = lastAt > 0 && lastAt !== lastSeenAt;
+        if (isNewPayout){
+          // Si palier 100k touché, son spécial + pluie billets 6s
+          if (data.milestoneJustHit){
+            safePlay(sndMilestone);
+            startRainBills(6000);
+          } else {
+            safePlay(sndPayout);
+          }
+
+          lastSeenAt = lastAt;
+          localStorage.setItem("xeilos_lastAt", String(lastSeenAt));
         }
-        elAgo.textContent = timeAgo(data.lastAt || 0);
 
-        // milestone FX
-        const milestone = Number(data.milestone || 0);
-        const justHit = !!data.milestoneJustHit;
-
-        // déclenchement : soit justHit, soit milestone augmente
-        if (justHit || (milestone > 0 && milestone !== lastMilestoneSeen)){
-          startBillRain();
-        }
-        lastMilestoneSeen = milestone;
-
-      } catch(e){
-        elErr.style.display = "block";
+      }catch(e){
+        err.style.display = "block";
       }
     }
 
-    // First refresh + interval
     refresh();
-    setInterval(refresh, REFRESH_MS);
-
-    // Optional: unlock audio on first click (utile si navigateur bloque autoplay)
-    window.addEventListener("click", () => {
-      try { audio.play().then(()=>audio.pause()).catch(()=>{}); } catch(e){}
-    }, { once:true });
+    setInterval(refresh, 2000);
   </script>
 </body>
 </html>
